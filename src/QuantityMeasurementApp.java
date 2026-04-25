@@ -120,3 +120,82 @@ class UC2QuantityMeasurementApp {
         System.out.println("[TC7] -5.0 in == -5.0 in: " + checkInchesEquality(-5.0, -5.0));
     }
 }
+// ============================================================
+// UC3: Generic Quantity Class (DRY Principle)
+// Concepts: DRY Principle, Enum with conversion factors,
+//           Generic class, equals() with conversion,
+//           Refactoring Feet and Inches into one class
+// ============================================================
+
+// LengthUnit enum — defines units and their conversion factors to feet
+enum LengthUnit {
+    FEET(1.0),       // Base unit: 1 foot = 1 foot
+    INCHES(1.0 / 12.0); // 1 inch = 1/12 foot
+
+    final double conversionFactor; // Factor to convert to feet
+
+    LengthUnit(double conversionFactor) {
+        this.conversionFactor = conversionFactor;
+    }
+}
+
+// Generic QuantityLength class — replaces both Feet and Inches
+class QuantityLength {
+    private final double value;
+    private final LengthUnit unit;
+
+    public QuantityLength(double value, LengthUnit unit) {
+        this.value = value;
+        this.unit  = unit;
+    }
+
+    // Convert this measurement to feet (base unit)
+    private double toBaseUnit() {
+        return value * unit.conversionFactor;
+    }
+
+    // Compare two QuantityLength objects by converting to base unit
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        QuantityLength other = (QuantityLength) obj;
+        // Compare base values with small epsilon for floating point
+        return Math.abs(this.toBaseUnit() - other.toBaseUnit()) < 1e-9;
+    }
+
+    public double getValue() { return value; }
+    public LengthUnit getUnit() { return unit; }
+    public double getBaseValue() { return toBaseUnit(); }
+}
+
+class UC3QuantityMeasurementApp {
+    public static void main(String[] args) {
+        System.out.println("====================================");
+        System.out.println("   Quantity Measurement App");
+        System.out.println("   UC3: Generic Quantity (DRY)");
+        System.out.println("====================================");
+
+        // Feet equality using generic class
+        System.out.println("\n--- Feet Equality (Generic) ---");
+        QuantityLength f1 = new QuantityLength(5.0, LengthUnit.FEET);
+        QuantityLength f2 = new QuantityLength(5.0, LengthUnit.FEET);
+        QuantityLength f3 = new QuantityLength(3.0, LengthUnit.FEET);
+        System.out.println("[TC1] 5.0 ft == 5.0 ft : " + f1.equals(f2));
+        System.out.println("[TC2] 5.0 ft == 3.0 ft : " + f1.equals(f3));
+
+        // Inches equality using generic class
+        System.out.println("\n--- Inches Equality (Generic) ---");
+        QuantityLength i1 = new QuantityLength(12.0, LengthUnit.INCHES);
+        QuantityLength i2 = new QuantityLength(12.0, LengthUnit.INCHES);
+        QuantityLength i3 = new QuantityLength(6.0,  LengthUnit.INCHES);
+        System.out.println("[TC3] 12.0 in == 12.0 in: " + i1.equals(i2));
+        System.out.println("[TC4] 12.0 in == 6.0 in : " + i1.equals(i3));
+
+        // Cross-unit equality: 12 inches == 1 foot
+        System.out.println("\n--- Cross-Unit Equality ---");
+        QuantityLength onefoot   = new QuantityLength(1.0,  LengthUnit.FEET);
+        QuantityLength twelvein  = new QuantityLength(12.0, LengthUnit.INCHES);
+        System.out.println("[TC5] 1.0 ft == 12.0 in : " + onefoot.equals(twelvein));
+    }
+}
