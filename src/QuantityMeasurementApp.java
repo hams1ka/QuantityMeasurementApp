@@ -134,7 +134,7 @@ enum LengthUnit {
     YARDS(3.0),
     CENTIMETERS(0.393701 / 12.0);
 
-    private final double conversionFactor; // Factor relative to FEET (base)
+    final double conversionFactor; // Factor relative to FEET (base)
 
     LengthUnit(double conversionFactor) {
         this.conversionFactor = conversionFactor;
@@ -484,5 +484,168 @@ class UC8QuantityMeasurementApp {
                            LengthUnit.INCHES.convertToBaseUnit(12.0) + " ft");
         System.out.println("[UC8] 1.0 ft convertFromBase   : " +
                            LengthUnit.INCHES.convertFromBaseUnit(1.0) + " in");
+    }
+}
+// ============================================================
+// UC9: Weight Measurement
+// Concepts: New measurement category, WeightUnit enum,
+//           QuantityWeight class, Mirrors LengthUnit pattern,
+//           KG base unit, Equality + Conversion + Addition
+// ============================================================
+
+// WeightUnit — standalone enum (mirrors UC8 LengthUnit pattern)
+enum WeightUnit {
+    KILOGRAM(1.0),         // Base unit
+    GRAM(0.001),           // 1 gram = 0.001 kg
+    POUND(0.453592);       // 1 pound = 0.453592 kg
+
+    private final double conversionFactor; // Factor relative to KG
+
+    WeightUnit(double conversionFactor) {
+        this.conversionFactor = conversionFactor;
+    }
+
+    // Convert value in THIS unit to base unit (kg)
+    public double convertToBaseUnit(double value) {
+        return value * conversionFactor;
+    }
+
+    // Convert value from base unit (kg) to THIS unit
+    public double convertFromBaseUnit(double baseValue) {
+        return baseValue / conversionFactor;
+    }
+
+    public double getConversionFactor() { return conversionFactor; }
+}
+
+// QuantityWeight — mirrors QuantityLength design
+class QuantityWeight {
+    private final double value;
+    private final WeightUnit unit;
+
+    public QuantityWeight(double value, WeightUnit unit) {
+        this.value = value;
+        this.unit  = unit;
+    }
+
+    // Convert to base unit (kg)
+    private double toBaseUnit() {
+        return unit.convertToBaseUnit(value);
+    }
+
+    // Equality: compare by converting to base unit
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) return true;
+        if (obj == null || getClass() != obj.getClass()) return false;
+        QuantityWeight other = (QuantityWeight) obj;
+        return Math.abs(this.toBaseUnit() - other.toBaseUnit()) < 1e-9;
+    }
+
+    // Convert to target unit
+    public QuantityWeight convertTo(WeightUnit targetUnit) {
+        if (targetUnit == null)
+            throw new IllegalArgumentException("Target unit cannot be null.");
+        double baseValue = toBaseUnit();
+        double converted = targetUnit.convertFromBaseUnit(baseValue);
+        return new QuantityWeight(converted, targetUnit);
+    }
+
+    // Static conversion
+    public static double convert(double value, WeightUnit from, WeightUnit to) {
+        if (!Double.isFinite(value))
+            throw new IllegalArgumentException("Value must be finite: " + value);
+        double base = from.convertToBaseUnit(value);
+        return to.convertFromBaseUnit(base);
+    }
+
+    // Add two weights — result in first operand's unit
+    public static QuantityWeight add(QuantityWeight w1, QuantityWeight w2) {
+        if (w1 == null || w2 == null)
+            throw new IllegalArgumentException("Weights cannot be null.");
+        if (!Double.isFinite(w1.value) || !Double.isFinite(w2.value))
+            throw new IllegalArgumentException("Weight values must be finite.");
+        double sumBase = w1.toBaseUnit() + w2.toBaseUnit();
+        double result  = w1.unit.convertFromBaseUnit(sumBase);
+        return new QuantityWeight(result, w1.unit);
+    }
+
+    // Add two weights — result in specified target unit
+    public static QuantityWeight add(QuantityWeight w1, QuantityWeight w2,
+                                     WeightUnit targetUnit) {
+        if (w1 == null || w2 == null)
+            throw new IllegalArgumentException("Weights cannot be null.");
+        if (targetUnit == null)
+            throw new IllegalArgumentException("Target unit cannot be null.");
+        double sumBase = w1.toBaseUnit() + w2.toBaseUnit();
+        double result  = targetUnit.convertFromBaseUnit(sumBase);
+        return new QuantityWeight(result, targetUnit);
+    }
+
+    public double getValue() { return value; }
+    public WeightUnit getUnit() { return unit; }
+
+    @Override
+    public String toString() {
+        return String.format("%.4f %s", value, unit);
+    }
+}
+
+class UC9QuantityMeasurementApp {
+    public static void main(String[] args) {
+        System.out.println("====================================");
+        System.out.println("   Quantity Measurement App");
+        System.out.println("   UC9: Weight Measurement");
+        System.out.println("====================================");
+
+        // --- Equality ---
+        System.out.println("\n--- Weight Equality ---");
+        QuantityWeight kg1 = new QuantityWeight(1.0,    WeightUnit.KILOGRAM);
+        QuantityWeight kg2 = new QuantityWeight(1.0,    WeightUnit.KILOGRAM);
+        QuantityWeight g1  = new QuantityWeight(1000.0, WeightUnit.GRAM);
+        QuantityWeight lb1 = new QuantityWeight(1.0,    WeightUnit.POUND);
+        QuantityWeight lb2 = new QuantityWeight(1.0,    WeightUnit.POUND);
+
+        System.out.println("[TC1] 1.0 kg == 1.0 kg       : " + kg1.equals(kg2));
+        System.out.println("[TC2] 1.0 kg == 1000.0 g     : " + kg1.equals(g1));
+        System.out.println("[TC3] 1.0 lb == 1.0 lb       : " + lb1.equals(lb2));
+        System.out.println("[TC4] 1.0 kg == 1.0 lb       : " + kg1.equals(lb1));
+
+        // --- Conversion ---
+        System.out.println("\n--- Weight Conversion ---");
+        double grams  = QuantityWeight.convert(1.0, WeightUnit.KILOGRAM, WeightUnit.GRAM);
+        double pounds = QuantityWeight.convert(1.0, WeightUnit.KILOGRAM, WeightUnit.POUND);
+        double kgs    = QuantityWeight.convert(1000.0, WeightUnit.GRAM, WeightUnit.KILOGRAM);
+        System.out.println("[TC5] 1.0 kg -> grams  : " + grams);
+        System.out.println("[TC6] 1.0 kg -> pounds : " + String.format("%.4f", pounds));
+        System.out.println("[TC7] 1000 g -> kg     : " + kgs);
+
+        // Instance conversion
+        QuantityWeight converted = kg1.convertTo(WeightUnit.GRAM);
+        System.out.println("[TC8] 1.0 kg (instance)-> " + converted);
+
+        // --- Addition ---
+        System.out.println("\n--- Weight Addition ---");
+        QuantityWeight w1   = new QuantityWeight(1.0,    WeightUnit.KILOGRAM);
+        QuantityWeight w2   = new QuantityWeight(500.0,  WeightUnit.GRAM);
+        QuantityWeight sum1 = QuantityWeight.add(w1, w2);
+        System.out.println("[TC9]  1.0 kg + 500.0 g            = " + sum1);
+
+        QuantityWeight sum2 = QuantityWeight.add(w1, w2, WeightUnit.GRAM);
+        System.out.println("[TC10] 1.0 kg + 500.0 g (in grams) = " + sum2);
+
+        // Length still works (no interference)
+        System.out.println("\n--- Length Still Works ---");
+        QuantityLength lf = new QuantityLength(1.0,  LengthUnit.FEET);
+        QuantityLength li = new QuantityLength(12.0, LengthUnit.INCHES);
+        System.out.println("[TC11] 1.0 ft == 12.0 in            : " + lf.equals(li));
+
+        // Invalid input
+        System.out.println("\n--- Invalid Input ---");
+        try {
+            QuantityWeight.convert(Double.NaN, WeightUnit.KILOGRAM, WeightUnit.GRAM);
+        } catch (IllegalArgumentException e) {
+            System.out.println("[TC12] NaN -> [ERROR] " + e.getMessage());
+        }
     }
 }
