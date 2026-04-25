@@ -129,10 +129,12 @@ class UC2QuantityMeasurementApp {
 
 // LengthUnit enum — defines units and their conversion factors to feet
 enum LengthUnit {
-    FEET(1.0),       // Base unit: 1 foot = 1 foot
-    INCHES(1.0 / 12.0); // 1 inch = 1/12 foot
+    FEET(1.0),              // Base unit
+    INCHES(1.0 / 12.0),    // 1 inch = 1/12 foot
+    YARDS(3.0),             // 1 yard = 3 feet
+    CENTIMETERS(0.393701 / 12.0); // 1 cm = 0.393701 inches = 0.393701/12 feet
 
-    final double conversionFactor; // Factor to convert to feet
+    final double conversionFactor;
 
     LengthUnit(double conversionFactor) {
         this.conversionFactor = conversionFactor;
@@ -197,5 +199,48 @@ class UC3QuantityMeasurementApp {
         QuantityLength onefoot   = new QuantityLength(1.0,  LengthUnit.FEET);
         QuantityLength twelvein  = new QuantityLength(12.0, LengthUnit.INCHES);
         System.out.println("[TC5] 1.0 ft == 12.0 in : " + onefoot.equals(twelvein));
+    }
+}
+// ============================================================
+// UC4: Extended Unit Support (Yards & Centimeters)
+// Concepts: Enum extension, Conversion factors,
+//           Yards (1 yard = 3 feet), CM (1cm = 0.393701 in)
+// ============================================================
+class UC4QuantityMeasurementApp {
+    public static void main(String[] args) {
+        System.out.println("====================================");
+        System.out.println("   Quantity Measurement App");
+        System.out.println("   UC4: Extended Units (Yard & CM)");
+        System.out.println("====================================");
+
+        // Feet equality
+        System.out.println("\n--- Feet ---");
+        QuantityLength f1 = new QuantityLength(1.0, LengthUnit.FEET);
+        QuantityLength f2 = new QuantityLength(1.0, LengthUnit.FEET);
+        System.out.println("[TC1] 1.0 ft == 1.0 ft  : " + f1.equals(f2));
+
+        // Inches equality
+        System.out.println("\n--- Inches ---");
+        QuantityLength i1 = new QuantityLength(12.0, LengthUnit.INCHES);
+        System.out.println("[TC2] 12.0 in == 1.0 ft : " + i1.equals(f1));
+
+        // Yards equality
+        System.out.println("\n--- Yards ---");
+        QuantityLength y1 = new QuantityLength(1.0, LengthUnit.YARDS);
+        QuantityLength y2 = new QuantityLength(3.0, LengthUnit.FEET);
+        QuantityLength y3 = new QuantityLength(36.0, LengthUnit.INCHES);
+        System.out.println("[TC3] 1.0 yd == 3.0 ft  : " + y1.equals(y2));
+        System.out.println("[TC4] 1.0 yd == 36.0 in : " + y1.equals(y3));
+
+        // Centimeters equality
+        System.out.println("\n--- Centimeters ---");
+        QuantityLength cm1 = new QuantityLength(2.54, LengthUnit.CENTIMETERS);
+        QuantityLength in1 = new QuantityLength(1.0,  LengthUnit.INCHES);
+        System.out.println("[TC5] 2.54 cm == 1.0 in : " + cm1.equals(in1));
+
+        // Unequal cross-unit
+        QuantityLength y4 = new QuantityLength(1.0, LengthUnit.YARDS);
+        QuantityLength f3 = new QuantityLength(1.0, LengthUnit.FEET);
+        System.out.println("[TC6] 1.0 yd == 1.0 ft  : " + y4.equals(f3));
     }
 }
