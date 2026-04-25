@@ -121,24 +121,36 @@ class UC2QuantityMeasurementApp {
     }
 }
 // ============================================================
-// UC3: Generic Quantity Class (DRY Principle)
-// Concepts: DRY Principle, Enum with conversion factors,
-//           Generic class, equals() with conversion,
-//           Refactoring Feet and Inches into one class
+// UC8: LengthUnit Refactored as Standalone (Single Responsibility)
+// Concepts: Standalone enum, Single Responsibility Principle,
+//           convertToBaseUnit(), convertFromBaseUnit(),
+//           Scalable pattern for new measurement categories
 // ============================================================
 
-// LengthUnit enum — defines units and their conversion factors to feet
+// LengthUnit — standalone enum with full conversion responsibility
 enum LengthUnit {
-    FEET(1.0),              // Base unit
-    INCHES(1.0 / 12.0),    // 1 inch = 1/12 foot
-    YARDS(3.0),             // 1 yard = 3 feet
-    CENTIMETERS(0.393701 / 12.0); // 1 cm = 0.393701 inches = 0.393701/12 feet
+    FEET(1.0),
+    INCHES(1.0 / 12.0),
+    YARDS(3.0),
+    CENTIMETERS(0.393701 / 12.0);
 
-    final double conversionFactor;
+    private final double conversionFactor; // Factor relative to FEET (base)
 
     LengthUnit(double conversionFactor) {
         this.conversionFactor = conversionFactor;
     }
+
+    // Convert a value in THIS unit to base unit (feet)
+    public double convertToBaseUnit(double value) {
+        return value * conversionFactor;
+    }
+
+    // Convert a value from base unit (feet) to THIS unit
+    public double convertFromBaseUnit(double baseValue) {
+        return baseValue / conversionFactor;
+    }
+
+    public double getConversionFactor() { return conversionFactor; }
 }
 
 // Generic QuantityLength class — replaces both Feet and Inches
@@ -152,8 +164,9 @@ class QuantityLength {
     }
 
     // Convert this measurement to feet (base unit)
+    // Delegate conversion to the unit itself (UC8 refactoring)
     private double toBaseUnit() {
-        return value * unit.conversionFactor;
+        return unit.convertToBaseUnit(value);
     }
 
     // Compare two QuantityLength objects by converting to base unit
@@ -426,5 +439,50 @@ class UC7QuantityMeasurementApp {
         } catch (IllegalArgumentException e) {
             System.out.println("[TC4] null target -> [ERROR] " + e.getMessage());
         }
+    }
+}
+// UC8 main — verifies backward compatibility after refactoring
+class UC8QuantityMeasurementApp {
+    public static void main(String[] args) {
+        System.out.println("====================================");
+        System.out.println("   Quantity Measurement App");
+        System.out.println("   UC8: Refactored LengthUnit");
+        System.out.println("====================================");
+
+        System.out.println("\n--- Backward Compatibility Checks ---");
+
+        // UC1: Feet equality
+        QuantityLength f1 = new QuantityLength(5.0, LengthUnit.FEET);
+        QuantityLength f2 = new QuantityLength(5.0, LengthUnit.FEET);
+        System.out.println("[UC1] 5.0 ft == 5.0 ft         : " + f1.equals(f2));
+
+        // UC3: Cross-unit equality
+        QuantityLength ft = new QuantityLength(1.0,  LengthUnit.FEET);
+        QuantityLength in = new QuantityLength(12.0, LengthUnit.INCHES);
+        System.out.println("[UC3] 1.0 ft == 12.0 in        : " + ft.equals(in));
+
+        // UC4: Yard equality
+        QuantityLength yd  = new QuantityLength(1.0, LengthUnit.YARDS);
+        QuantityLength ft3 = new QuantityLength(3.0, LengthUnit.FEET);
+        System.out.println("[UC4] 1.0 yd == 3.0 ft         : " + yd.equals(ft3));
+
+        // UC5: Conversion
+        double converted = QuantityLength.convert(1.0, LengthUnit.FEET, LengthUnit.INCHES);
+        System.out.println("[UC5] 1.0 ft -> in             : " + converted);
+
+        // UC6: Addition
+        QuantityLength sum = QuantityLength.add(ft, in);
+        System.out.println("[UC6] 1.0 ft + 12.0 in         : " + sum);
+
+        // UC7: Addition with target unit
+        QuantityLength sum2 = QuantityLength.add(ft, in, LengthUnit.YARDS);
+        System.out.println("[UC7] 1.0 ft + 12.0 in (yards) : " + sum2);
+
+        // Unit conversion methods (new in UC8)
+        System.out.println("\n--- New UC8 Unit Methods ---");
+        System.out.println("[UC8] 12.0 in convertToBase    : " +
+                           LengthUnit.INCHES.convertToBaseUnit(12.0) + " ft");
+        System.out.println("[UC8] 1.0 ft convertFromBase   : " +
+                           LengthUnit.INCHES.convertFromBaseUnit(1.0) + " in");
     }
 }
