@@ -169,6 +169,30 @@ class QuantityLength {
     public double getValue() { return value; }
     public LengthUnit getUnit() { return unit; }
     public double getBaseValue() { return toBaseUnit(); }
+
+    // Convert this measurement to a target unit
+    public QuantityLength convertTo(LengthUnit targetUnit) {
+        // Step 1: Convert to base unit (feet)
+        double baseValue = toBaseUnit();
+        // Step 2: Convert from base unit to target unit
+        double converted = baseValue / targetUnit.conversionFactor;
+        return new QuantityLength(converted, targetUnit);
+    }
+
+    // Static conversion method
+    public static double convert(double value, LengthUnit from, LengthUnit to) {
+        if (!Double.isFinite(value)) {
+            throw new IllegalArgumentException("Value must be finite: " + value);
+        }
+        // Convert to base (feet), then to target
+        double baseValue = value * from.conversionFactor;
+        return baseValue / to.conversionFactor;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%.4f %s", value, unit);
+    }
 }
 
 class UC3QuantityMeasurementApp {
@@ -242,5 +266,53 @@ class UC4QuantityMeasurementApp {
         QuantityLength y4 = new QuantityLength(1.0, LengthUnit.YARDS);
         QuantityLength f3 = new QuantityLength(1.0, LengthUnit.FEET);
         System.out.println("[TC6] 1.0 yd == 1.0 ft  : " + y4.equals(f3));
+    }
+}
+// ============================================================
+// UC5: Unit-to-Unit Conversion (Same Measurement Type)
+// Concepts: Conversion method, Base unit normalization,
+//           Static convert(), Precision handling
+// ============================================================
+class UC5QuantityMeasurementApp {
+    public static void main(String[] args) {
+        System.out.println("====================================");
+        System.out.println("   Quantity Measurement App");
+        System.out.println("   UC5: Unit-to-Unit Conversion");
+        System.out.println("====================================");
+
+        // Feet → Inches
+        System.out.println("\n--- Feet to Inches ---");
+        double result1 = QuantityLength.convert(1.0, LengthUnit.FEET, LengthUnit.INCHES);
+        System.out.println("[TC1] 1.0 ft -> inches : " + result1);
+
+        // Yards → Feet
+        System.out.println("\n--- Yards to Feet ---");
+        double result2 = QuantityLength.convert(1.0, LengthUnit.YARDS, LengthUnit.FEET);
+        System.out.println("[TC2] 1.0 yd -> feet   : " + result2);
+
+        // Yards → Inches
+        System.out.println("\n--- Yards to Inches ---");
+        double result3 = QuantityLength.convert(1.0, LengthUnit.YARDS, LengthUnit.INCHES);
+        System.out.println("[TC3] 1.0 yd -> inches : " + result3);
+
+        // Centimeters → Inches
+        System.out.println("\n--- Centimeters to Inches ---");
+        double result4 = QuantityLength.convert(2.54, LengthUnit.CENTIMETERS, LengthUnit.INCHES);
+        System.out.println("[TC4] 2.54 cm -> inches: " + String.format("%.4f", result4));
+
+        // Instance method conversion
+        System.out.println("\n--- Instance Conversion ---");
+        QuantityLength length = new QuantityLength(3.0, LengthUnit.FEET);
+        QuantityLength converted = length.convertTo(LengthUnit.INCHES);
+        System.out.println("[TC5] 3.0 ft -> " + converted);
+
+        // Invalid input test
+        System.out.println("\n--- Invalid Input ---");
+        try {
+            QuantityLength.convert(Double.POSITIVE_INFINITY,
+                                   LengthUnit.FEET, LengthUnit.INCHES);
+        } catch (IllegalArgumentException e) {
+            System.out.println("[TC6] Infinity -> [ERROR] " + e.getMessage());
+        }
     }
 }
