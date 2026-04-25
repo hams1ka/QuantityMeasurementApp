@@ -202,6 +202,22 @@ class QuantityLength {
         return new QuantityLength(result, l1.unit);
     }
 
+     // Add two lengths and return result in explicitly specified target unit
+    public static QuantityLength add(QuantityLength l1, QuantityLength l2,
+                                     LengthUnit targetUnit) {
+        if (l1 == null || l2 == null)
+            throw new IllegalArgumentException("Lengths cannot be null.");
+        if (targetUnit == null)
+            throw new IllegalArgumentException("Target unit cannot be null.");
+        if (!Double.isFinite(l1.value) || !Double.isFinite(l2.value))
+            throw new IllegalArgumentException("Length values must be finite.");
+        // Convert both to base unit (feet) and sum
+        double sumInBase = l1.toBaseUnit() + l2.toBaseUnit();
+        // Convert to explicitly specified target unit
+        double result = sumInBase / targetUnit.conversionFactor;
+        return new QuantityLength(result, targetUnit);
+    }
+
     @Override
     public String toString() {
         return String.format("%.4f %s", value, unit);
@@ -368,6 +384,47 @@ class UC6QuantityMeasurementApp {
             QuantityLength.add(null, l1);
         } catch (IllegalArgumentException e) {
             System.out.println("[TC4] null + l1 -> [ERROR] " + e.getMessage());
+        }
+    }
+}
+// ============================================================
+// UC7: Addition with Target Unit Specification
+// Concepts: Overloaded add(), Explicit target unit,
+//           Flexible result unit, Same-category addition
+// ============================================================
+class UC7QuantityMeasurementApp {
+    public static void main(String[] args) {
+        System.out.println("====================================");
+        System.out.println("   Quantity Measurement App");
+        System.out.println("   UC7: Addition with Target Unit");
+        System.out.println("====================================");
+
+        QuantityLength l1 = new QuantityLength(1.0,  LengthUnit.FEET);
+        QuantityLength l2 = new QuantityLength(12.0, LengthUnit.INCHES);
+
+        // 1 foot + 12 inches → result in YARDS
+        System.out.println("\n--- Result in Yards ---");
+        QuantityLength sum1 = QuantityLength.add(l1, l2, LengthUnit.YARDS);
+        System.out.println("[TC1] 1.0 ft + 12.0 in (in yards)      = " + sum1);
+
+        // 1 foot + 12 inches → result in CENTIMETERS
+        System.out.println("\n--- Result in Centimeters ---");
+        QuantityLength sum2 = QuantityLength.add(l1, l2, LengthUnit.CENTIMETERS);
+        System.out.println("[TC2] 1.0 ft + 12.0 in (in cm)         = " + sum2);
+
+        // 1 yard + 3 feet → result in INCHES
+        System.out.println("\n--- Yards + Feet → Inches ---");
+        QuantityLength l3 = new QuantityLength(1.0, LengthUnit.YARDS);
+        QuantityLength l4 = new QuantityLength(3.0, LengthUnit.FEET);
+        QuantityLength sum3 = QuantityLength.add(l3, l4, LengthUnit.INCHES);
+        System.out.println("[TC3] 1.0 yd + 3.0 ft (in inches)      = " + sum3);
+
+        // Null target unit
+        System.out.println("\n--- Null Target Unit ---");
+        try {
+            QuantityLength.add(l1, l2, null);
+        } catch (IllegalArgumentException e) {
+            System.out.println("[TC4] null target -> [ERROR] " + e.getMessage());
         }
     }
 }
